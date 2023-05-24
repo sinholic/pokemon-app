@@ -8,6 +8,11 @@ interface Pokemon {
   url: string;
 }
 
+
+/**
+ * interface for pokemon detail
+ * contains name, sprite, types, species
+ * */ 
 interface PokemonDetail {
   name: string;
   sprites: {
@@ -18,7 +23,24 @@ interface PokemonDetail {
       name: string;
     };
   }[];
+  species: {
+    url: string;
+  };
 }
+
+/**
+ * interface for pokemon species
+ * contains color and flavor text
+ * */ 
+interface PokemonSpecies {
+  color: {
+    name: string;
+  };
+  flavor_text_entries: {
+    flavor_text: string;
+  }[];
+}
+
 
 const PokemonList: React.FC<{ pokemons: Pokemon[] }> = ({ pokemons }) => {
   return (
@@ -26,7 +48,7 @@ const PokemonList: React.FC<{ pokemons: Pokemon[] }> = ({ pokemons }) => {
       <h1 className="text-2xl font-bold mb-4">Pokemon List</h1>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {pokemons.map((pokemon) => (
-          <div key={pokemon.name} className="bg-gray-500 p-4 rounded-md">
+          <div key={pokemon.name} className="rounded-md">
             <PokemonItem pokemon={pokemon} />
           </div>
         ))}
@@ -38,6 +60,7 @@ const PokemonList: React.FC<{ pokemons: Pokemon[] }> = ({ pokemons }) => {
 
 const PokemonItem: React.FC<{ pokemon: Pokemon }> = ({ pokemon }) => {
   const [pokemonDetail, setPokemonDetail] = useState<PokemonDetail | null>(null);
+  const [pokemonSpecies, setPokemonSpecies] = useState<PokemonSpecies | null>(null);
 
   useEffect(() => {
     const fetchPokemonDetail = async () => {
@@ -52,14 +75,36 @@ const PokemonItem: React.FC<{ pokemon: Pokemon }> = ({ pokemon }) => {
     fetchPokemonDetail();
   }, [pokemon.url]);
 
+  useEffect(() => {
+    if (pokemonDetail && pokemonDetail.species) {
+      /**
+       * Fetch pokemon species after success getting data from pokemon detail
+       */
+      const fetchPokemonSpecies = async () => {
+        try {
+          const speciesResponse = await axios.get<PokemonSpecies>(pokemonDetail?.species.url);
+          setPokemonSpecies(speciesResponse.data);
+        } catch (error) {
+          console.log(error);
+        }
+      };
+      fetchPokemonSpecies();
+    }
+  }, [pokemonDetail]);
+
+
   if (!pokemonDetail) {
     return null;
   }
 
-  const backgroundColor = pokemonDetail.types[0]?.type.name; // Use the first type's name as the background color
+  if (!pokemonSpecies) {
+    return null;
+  }
+
+  const backgroundColor = pokemonSpecies.color.name; // Use the color's name as the background color.
 
   return (
-    <div className={`bg-${backgroundColor}-200 p-4 rounded-md`}>
+    <div className={`text-black saturate-50 p-4 rounded-md`} style={{ backgroundColor: backgroundColor  }}>
       <Link href={`/pokemon/${pokemon.name}`}>
           <h3 className="text-lg capitalize text-center font-semibold mb-2">{pokemonDetail.name}</h3>
           <Image src={pokemonDetail.sprites.front_default} alt={pokemonDetail.name} width={200} height={200} />
